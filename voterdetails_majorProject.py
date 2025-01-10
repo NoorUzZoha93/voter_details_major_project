@@ -5,14 +5,14 @@ import cv2
 import pandas as pd
 import numpy as np
 import re
-from openpyxl import load_workbook
+# from openpyxl import load_workbook
 
 # Convert PDF to images
 pdf_file = 'E:\\PYTHON2024\\PythonProjects\\MAJOR_PROJECT\\ImagestoTexts\\PS_NO_3_45.pdf'
 images = convert_from_path(pdf_file)
 data = []
 # Loop through each image (page)
-sno_text, voter_name, relative_name, house_no, age, gender, code, code_text = '','','','','','','',''
+sno_text, voter_name, relative_name, house_no, age, gender, code, code_text,relation = '','','','','','','','',''
 for image in images:
     # Convert image to grayscale
     gray = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2GRAY)
@@ -44,11 +44,11 @@ for image in images:
             for item in sno_list:
                 if item.startswith("Name :") or item.startswith("Name +") or item.startswith("Name ?"):
                     voter_name= re.split(r"Name :|Name +|Name ?|Name !|Name =|Name \++|Name +:",item)[-1]
-                    voter_name = voter_name.strip(':!+?')
+                    voter_name = re.sub(r'[^a-zA-Z\s]','',voter_name)
             for item in sno_list:
                 if item.startswith("Husbands Name:") or item.startswith("Fathers Name:") or item.startswith("Mothers Name:") or item.startswith("Others:"):
                     relative_name = re.split("Husbands Name:|Fathers Name:|Mothers Name:|Others:",item)[-1]
-                    relative_name = relative_name.strip(r']+:\!/,$')
+                    relative_name = re.sub(r'[^a-zA-Z\s]', '', relative_name)
             for item in sno_list:
                 if item.startswith("House Number :"):
                     house_no= item.split("House Number :")[-1]
@@ -57,23 +57,29 @@ for image in images:
                     age_list = item.split("Age :")[-1]
                     age_list = re.findall(r"\d+", age_list)
                     age = ''.join(age_list)
-                    age = re.match("^[0-9]+$", age)
-
             for item in sno_list:
                 if item.startswith("Age :"):
                     gender_list = item.split("Age :")[-1]
                     gender_list = re.findall(r"\b(Female|Male)\b", gender_list)
                     gender = ''.join(gender_list)
-
-                # gender = str(gender).strip(':,!+?')
+                    if gender == "Male":
+                        relation = 'Father'
+                    else:
+                        relation = ''
             code_list = code_text.split('\n')
             for item in code_list:
                 if item.isalnum():
-                    code = code_list[0].strip(r':,]*\\')
-                    code = re.sub(r'[^a-zA-Z0-9]','',code)
+                    # code = code_list[0].strip(r':,]*\\')
+                    code = re.sub(r'[^a-zA-Z0-9]','',code_list[0])
 
-            data.append({"EPIC_ID":code ,"Name": voter_name,"Relative Name":relative_name, "House Number":house_no,"Age":age ,"Gender":gender})
+            data.append({"EPIC_ID":code ,"Name": voter_name,"Relative Name":relative_name, "Relation": relation, "House Number":house_no,"Age":age ,"Gender":gender})
 
 df = pd.DataFrame(data)
-df.to_excel('Major_project.xlsx')
+# df.read_excel('Major_project.xlsx')
+df = df.drop_duplicates()
+df.to_excel('Major_project2.xlsx')
+
+
+
+
 
